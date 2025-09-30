@@ -1,0 +1,21 @@
+Package: hfaggregate
+Title: Aggregate Hydrofabrics to outlets and distributions
+Version: 0.0.0.9000
+Authors@R: 
+    person("Mike", "Johnson", , "mjohnson@lynker.com", role = c("aut", "cre"))
+Description: Aggregate Hydrofabrics to outlets and distributions.
+License: Apache License (>= 2)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    cli,
+    dplyr,
+    glue,
+    hfutils,
+    sf,
+    terra,
+    tidyr,
+    utils
+Remotes:
+    lynker-spatial/hfutils

@@ -1,8 +1,12 @@
 Package: hfaggregate
 Title: Aggregate Hydrofabrics to outlets and distributions
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: 
-    person("Mike", "Johnson", , "mjohnson@lynker.com", role = c("aut", "cre"))
+    person(
+      given = "Mike", 
+      family = "Johnson", 
+      email = "mjohnson@lynker.com", 
+      role = c("aut", "cre"))
 Description: Aggregate Hydrofabrics to outlets and distributions.
 License: Apache License (>= 2)
 Encoding: UTF-8
@@ -19,3 +23,9 @@ Imports:
     utils
 Remotes:
     lynker-spatial/hfutils
+Depends: 
+    R (>= 3.5)
+LazyData: true
+LazyDataCompression: xz
+URL: https://github.com/lynker-spatial/hfaggregate
+BugReports: https://github.com/lynker-spatial/hfaggregate/issues

@@ -163,6 +163,8 @@
 #'   Default: `5070`.
 #' @param pois An `sf` (or data frame) with a `flowpath_id` column indicating
 #'   POI-associated flowpaths to anchor mainstem levelpaths.
+#' @param outlets Optional character/numeric vector of flowpath IDs to treat as
+#'   outlets when `pois` is `NULL` or when additional outlets should be seeded.
 #' @param outfile Optional output path (reserved for future write support).
 #'
 #' @return A named list with two `sf` layers:
@@ -200,6 +202,7 @@ aggregate_to_outlets = function(gpkg = NULL,
                                 divide = NULL,
                                 crs = 5070,
                                 pois = NULL,
+                                outlets = NULL,
                                 outfile = NULL){
   
   id_col = "flowpath_id"
@@ -214,7 +217,22 @@ aggregate_to_outlets = function(gpkg = NULL,
     prepare_network() |>
     add_network_type(verbose = FALSE)
   
-  outlets = pois$flowpath_id
+  if (!is.null(pois)) {
+    names(pois) <- tolower(names(pois))
+    if (!"flowpath_id" %in% names(pois)) {
+      cli::cli_abort("`pois` must contain a `flowpath_id` column.")
+    }
+    poi_outlets <- pois$flowpath_id
+  } else {
+    poi_outlets <- NULL
+  }
+  
+  outlets <- unique(c(outlets, poi_outlets))
+  outlets <- outlets[!is.na(outlets)]
+  
+  if (length(outlets) == 0) {
+    cli::cli_abort("Provide either `pois` with `flowpath_id` or an `outlets` vector.")
+  }
   
   mainstems_w_poi = filter(network_list$flowpaths, flowpath_id %in% outlets) |> 
     pull(levelpathid) |> 
@@ -240,16 +258,18 @@ aggregate_to_outlets = function(gpkg = NULL,
     sf::st_as_sf() |> 
     dplyr::filter(levelpathid %in% mainstems_w_poi) |> 
     node_geometry() |> 
-    dplyr::mutate(ups_id = NA)
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      ups_id = list(
+        dplyr::filter(network_list$flowpaths,
+                      flowpath_toid == .data$flowpath_toid,
+                      flowpath_id != .data$flowpath_id) |>
+          dplyr::pull(flowpath_id)
+      )
+    ) |>
+    dplyr::ungroup()
   
-  for(i in 1:nrow(critical_juntions)) {
-    critical_juntions$ups_id[i] = dplyr::filter(network_list$flowpaths, 
-                                                flowpath_toid == critical_juntions$flowpath_toid[i]) |> 
-      dplyr::filter(flowpath_id != critical_juntions$flowpath_id[i]) |> 
-      dplyr::pull(flowpath_id)
-  }
-  
-  all_outlets  <- unique(c(critical_juntions$ups_id, outlets))
+  all_outlets  <- unique(c(unlist(critical_juntions$ups_id), outlets))
   critical_lps <- dplyr::pull(dplyr::filter(network_list$flowpaths, 
                                             flowpath_id %in% outlets), "levelpathid")
   
@@ -298,8 +318,5 @@ aggregate_to_outlets = function(gpkg = NULL,
  
   
 }
-
-
-
 
 

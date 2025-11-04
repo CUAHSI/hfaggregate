@@ -1,1 +1,81 @@
-# hyAggregate
+
+# hfaggregate
+
+`hfaggregate` provides utilities for collapsing high-resolution
+hydrofabrics into analysis-ready outlet networks or uniform-sized
+catchment distributions. It builds on the
+[`hfutils`](https://github.com/lynker-spatial/hfutils) toolkit and
+expects standard Hydrofabric GeoPackages as inputs.
+
+## Installation
+
+``` r
+# install.packages("remotes")
+remotes::install_github("lynker-spatial/hfaggregate", dependencies = TRUE)
+```
+
+The package imports `sf`, `terra`, `dplyr`, `hfutils`, and `cli`; make
+sure the system requirements for those packages (GEOS, GDAL, PROJ) are
+available.
+
+## Key functionality
+
+- `aggregate_to_outlets()`: unions divides and mainstem flowpaths by
+  outlet groups discovered from POIs or critical levelpath junctions.
+- `aggregate_to_distribution()`: enforces target catchment sizes while
+  respecting minimum flowpath length/area constraints and optional POI
+  locks.
+
+## Quick start
+
+``` r
+library(hfutils)
+library(hfaggregate)
+
+hf_path <- "/Users/mikejohnson/hydrofabric/hydrofabric-v3/tmp/rfc/nwis-06752260_rfc.gpkg"
+
+pois  <- hfutils::as_ogr(hf_path, "pois") |> 
+  dplyr::select(flowpath_id, poi_id, geom) |> 
+  hfutils::st_as_sf()
+
+# Collapse the network around POI-constrained outlets
+outlet_net <- aggregate_to_outlets(
+  gpkg     = hf_path,
+  pois     = pois
+)
+
+hfsubset::hfview(outlet_net) + pois
+```
+
+![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+
+``` r
+# Build a uniformly sized distribution
+distribution <- aggregate_to_distribution(
+  gpkg = hf_path,
+  pois = pois
+)
+
+hfsubset::hfview(distribution) + pois
+```
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Both functions return lists with `flowpaths`, `divides`, and
+(optionally) `pois` layers that can be written to disk via
+`hfutils::write_hydrofabric()`.
+
+## Tuning aggregation behaviour
+
+- **Outlets vs. POIs**: `aggregate_to_outlets()` seeds groups from the
+  supplied POIs; set `auto_seed_terminals = TRUE` inside
+  `.partition_and_flag_mainstem()` if you need terminal nodes treated as
+  outlets even without POIs.
+- **Size constraints**: `aggregate_to_distribution()` first merges along
+  mainstems (`aggregate_along_mainstems()`), then collapses headwaters
+  via `collapse_headwaters()`. Adjust `ideal_size_sqkm`,
+  `min_length_km`, and `min_area_sqkm` to bias the result toward longer
+  or wider units.
+- **POI preservation**: Provide an `sf` data frame with `flowpath_id`
+  and `poi_id` columns to prevent POI-bearing segments from being merged
+  away.

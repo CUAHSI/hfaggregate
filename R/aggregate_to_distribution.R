@@ -113,7 +113,7 @@ aggregate_to_distribution <- function(gpkg = NULL,
                                       outfile = NULL,
                                       overwrite = FALSE,
                                       verbose = TRUE) {
- 
+
   if (!is.null(outfile)) {
     if (file.exists(outfile) & overwrite) {
       unlink(outfile)
@@ -134,9 +134,25 @@ aggregate_to_distribution <- function(gpkg = NULL,
     network_list$flowpaths$member_comid <- network_list$flowpaths$flowpath_id
   }
   
+  has_pois <- !is.null(pois)
+  
+  warn_poi <- function(stage, values) {
+    if (has_pois) {
+      total <- length(unique(pois$poi_id))
+      tracked <- length(unique(na.omit(values)))
+      if (!identical(total, tracked)) {
+        warning(sprintf("All POIs are not indexable: %s", stage), call. = FALSE)
+      }
+    }
+  }
+  
   # Add outlets
-  if (!is.null(pois)) {
+  if (has_pois) {
     names(pois) <- tolower(names(pois))
+    
+    if (!all(c("flowpath_id", "poi_id") %in% names(pois))) {
+      cli::cli_abort("`pois` must include `flowpath_id` and `poi_id` columns.")
+    }
     
     bad <- filter(pois, !flowpath_id %in% network_list$flowpaths$flowpath_id)
     
@@ -149,9 +165,7 @@ aggregate_to_distribution <- function(gpkg = NULL,
                                         by = "flowpath_id"
     )
     
-    if (length(unique(pois$poi_id)) != length(unique(na.omit(network_list$flowpaths$poi_id)))) {
-      warning("All POIs are not indexable: reference", call. = FALSE)
-    }
+    warn_poi("reference", network_list$flowpaths$poi_id)
   } else {
     network_list$flowpaths$poi_id <- NA
     network_list$flowpaths$hl_uri <- NA
@@ -165,17 +179,13 @@ aggregate_to_distribution <- function(gpkg = NULL,
     min_area_sqkm,
     min_length_km)
   
-  if (length(unique(pois$poi_id)) != length(unique(na.omit(main_agg$flowpaths$poi_id)))) {
-    warning("All POIs are not indexable: mainstem aggregation", call. = FALSE)
-  }
+  warn_poi("mainstem aggregation", main_agg$flowpaths$poi_id)
   
   collapse_agg <- collapse_headwaters(network_list = main_agg, min_area_sqkm, min_length_km)
   
   collapse_agg$divides <- clean_geometry(collapse_agg$divides,  ID = "divide_id", keep = NULL)
   
-  if (length(unique(pois$poi_id)) != length(unique(na.omit(collapse_agg$flowpaths$poi_id)))) {
-    warning("All POIs are not indexable: collapse", call. = FALSE)
-  }
+  warn_poi("collapse", collapse_agg$flowpaths$poi_id)
   
   network_list <- collapse_agg
   rm(collapse_agg)
@@ -202,9 +212,7 @@ aggregate_to_distribution <- function(gpkg = NULL,
     ) %>%
     mutate(divide_id = ifelse(flowpath_id %in% network_list$divides$divide_id, flowpath_id, NA))
   
-  if (length(unique(pois$poi_id)) != length(unique(na.omit(network_list$flowpaths$poi_id)))) {
-    warning("All POIs are not indexable: final", call. = FALSE)
-  }
+  warn_poi("final", network_list$flowpaths$poi_id)
   
   topo <- st_drop_geometry(network_list$flowpaths) %>%
     select(divide_id, flowpath_toid)
@@ -256,9 +264,7 @@ aggregate_to_distribution <- function(gpkg = NULL,
     )), by = "divide_id") |>
     distinct()
   
-  if (length(unique(pois$poi_id)) != length(unique(na.omit(network_list$network$poi_id)))) {
-    warning("All POIs are not indexable: network", call. = FALSE)
-  }
+  warn_poi("network", network_list$network$poi_id)
   
   if (!is.null(vpu)) {
     network_list$network$vpu <- vpu
@@ -744,7 +750,7 @@ collapse_headwaters <- function(network_list,
 #' @export
 #' @importFrom sf st_intersects st_drop_geometry st_cast
 #' @importFrom dplyr left_join select
-#' @importFrom hfutils get_node
+#' @importFrom hfutils get_node node_geometry
 
 define_touch_id <- function(flowpaths, term_cut = 1e9) {
   
@@ -780,4 +786,3 @@ define_touch_id <- function(flowpaths, term_cut = 1e9) {
   ) %>%
     filter(is.na(poi_id))
 }
-

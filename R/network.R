@@ -2,18 +2,20 @@
 #'
 #' Adds boolean flags `has_divide` to flowpaths and `has_flowpath` to divides.
 #' @param network_list List of `flowpaths` and `divides` (sf objects).
-#' @param verbose Logical. Emit progress messages if TRUE.
 #' @return Updated `network_list` with type info columns.
 #' @importFrom dplyr mutate filter
 #' @export
 
-add_network_type <- function(network_list, verbose = TRUE) {
+add_network_type <- function(network_list) {
+  
   network_list$flowpaths <- network_list$flowpaths |>
     mutate(has_divide = flowpath_id %in% network_list$divides$divide_id) |>
     filter(!duplicated(flowpath_id))
+  
   network_list$divides <- network_list$divides |>
     mutate(has_flowpath = divide_id %in% network_list$flowpaths$flowpath_id) |>
     filter(!duplicated(divide_id))
+  
   return(network_list)
 }
 
@@ -46,7 +48,7 @@ add_network_type <- function(network_list, verbose = TRUE) {
 #' @importFrom sf st_as_sf st_drop_geometry st_geometry<- st_geometry_type st_crs
 #' @importFrom dplyr select mutate filter right_join distinct any_of across
 #' @importFrom cli cli_alert_info cli_alert_warning cli_alert_success cli_abort
-#' @importFrom hfutils get_hydroseq accumulate_downstream read_hydrofabric add_measures
+#' @importFrom hfutils get_hydroseq accumulate_downstream read_hydrofabric add_measures rename_geometry
 
 prepare_network <- function(network_list) {
   # ---- validate --------------------------------------------------------------
@@ -62,16 +64,16 @@ prepare_network <- function(network_list) {
   }
   
   # ---- helpers ---------------------------------------------------------------
-  .rename_geometry <- function(x, nm = "geom") {
-    # rename the active geometry column to `nm` (no-op if already named)
-    gcol <- attr(x, "sf_column")
-    if (!identical(gcol, nm)) {
-      sf::st_geometry(x) <- sf::st_geometry(x)
-      attr(x, "sf_column") <- nm
-      names(x)[names(x) == gcol] <- nm
-    }
-    x
-  }
+  # .rename_geometry <- function(x, nm = "geom") {
+  #   # rename the active geometry column to `nm` (no-op if already named)
+  #   gcol <- attr(x, "sf_column")
+  #   if (!identical(gcol, nm)) {
+  #     sf::st_geometry(x) <- sf::st_geometry(x)
+  #     attr(x, "sf_column") <- nm
+  #     names(x)[names(x) == gcol] <- nm
+  #   }
+  #   x
+  # }
   
   .require_cols <- function(x, cols, where) {
     miss <- setdiff(cols, names(x))
@@ -105,8 +107,8 @@ prepare_network <- function(network_list) {
   }
   
   # ---- standardize names & geometry -----------------------------------------
-  network_list$flowpaths <- .rename_geometry(network_list$flowpaths, "geom")
-  network_list$divides   <- .rename_geometry(network_list$divides,   "geom")
+  network_list$flowpaths <- hfutils::rename_geometry(network_list$flowpaths, "geom")
+  network_list$divides   <- hfutils::rename_geometry(network_list$divides,   "geom")
   
   names(network_list$flowpaths) <- tolower(names(network_list$flowpaths))
   names(network_list$divides)   <- tolower(names(network_list$divides))
@@ -172,6 +174,7 @@ prepare_network <- function(network_list) {
 #' Validates a flowpath and catchment network
 #' @param network_list list containing flowline and catchment `sf` objects
 #' @param term_cut cutoff integer to define terminal IDs
+#' @param check logical; if FALSE, skips checks and returns input
 #' @return a list containing flowline and catchment `sf` objects
 #' @noRd
 #' @importFrom dplyr mutate select left_join

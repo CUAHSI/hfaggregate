@@ -28,7 +28,15 @@
 
 \item{levelpath_col}{name of levelpath column (default "levelpathid").}
 
+\item{hydroseq_col}{name of hydroseq column (default "hydroseq").}
+
 \item{include_outlet}{logical; if TRUE, the outlet feature belongs to its own group.}
+
+\item{hydroseq_increases_downstream}{logical; if TRUE, higher hydroseq values are downstream.}
+
+\item{auto_seed_terminals}{logical; if TRUE, terminal flowpaths are treated as outlets if no matches found.}
+
+\item{quiet}{logical; if FALSE, prints summary messages.}
 }
 \value{
 \code{flowpaths} with two new columns:

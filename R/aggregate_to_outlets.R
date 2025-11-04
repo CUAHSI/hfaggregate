@@ -5,7 +5,11 @@
 #' @param id_col         name of ID column (default "flowpath_id").
 #' @param toid_col       name of downstream ID column (default "flowpath_toid").
 #' @param levelpath_col  name of levelpath column (default "levelpathid").
+#' @param hydroseq_col  name of hydroseq column (default "hydroseq").
 #' @param include_outlet logical; if TRUE, the outlet feature belongs to its own group.
+#' @param hydroseq_increases_downstream logical; if TRUE, higher hydroseq values are downstream.
+#' @param auto_seed_terminals logical; if TRUE, terminal flowpaths are treated as outlets if no matches found.
+#' @param quiet logical; if FALSE, prints summary messages.
 #'
 #' @return `flowpaths` with two new columns:
 #'   - group_id (integer; NA where no downstream outlet is reachable)
@@ -159,8 +163,7 @@
 #'   defaults used by `read_hydrofabric()`.
 #' @param divide Optional layer name for divides in `gpkg`. If `NULL`, defaults
 #'   used by `read_hydrofabric()`.
-#' @param crs Target integer EPSG code used when reading the hydrofabric.
-#'   Default: `5070`.
+#' @param crs Target CRS used when reading the hydrofabric. Default: `5070`.
 #' @param pois An `sf` (or data frame) with a `flowpath_id` column indicating
 #'   POI-associated flowpaths to anchor mainstem levelpaths.
 #' @param outlets Optional character/numeric vector of flowpath IDs to treat as
@@ -174,23 +177,7 @@
 #'        `levelpathid`, `vpuid`, `member_comid` (CSV of members),
 #'        and `flowpath_toid` representing the collapsed next-group link.}
 #' }
-#'
-#' @section Requirements:
-#' The following package-internal helpers are expected to exist in your package:
-#' `read_hydrofabric()`, `prepare_network()`, `add_network_type()`,
-#' `node_geometry()`, `union_polygons()`, and `union_linestrings()`.
-#'
-#' @examples
-#' \dontrun{
-#' res <- aggregate_to_outlets(
-#'   gpkg = "hydrofabric.gpkg",
-#'   flowpath = "flowpaths",
-#'   divide = "divides",
-#'   pois = my_pois_sf
-#' )
-#' plot(res$divides["flowpath_id"])
-#' }
-#'
+
 #' @export
 #' @importFrom dplyr filter select mutate group_by 
 #' @importFrom dplyr left_join pull slice_max ungroup distinct rename
@@ -210,10 +197,7 @@ aggregate_to_outlets = function(gpkg = NULL,
   levelpath_col = "levelpathid"
   hydroseq_col = "hydroseq"
   
-  network_list <- read_hydrofabric(gpkg = gpkg,
-                                   divides = divide, 
-                                   flowpaths = flowpath,
-                                   crs = crs) |>
+  network_list <- read_hydrofabric(gpkg = gpkg, divides = divide,  flowpaths = flowpath, crs = crs) |>
     prepare_network() |>
     add_network_type(verbose = FALSE)
   
@@ -314,9 +298,6 @@ aggregate_to_outlets = function(gpkg = NULL,
   } else {
     return(list(divides = divides_out, flowpaths = flowpaths_out))
   }
-  
- 
-  
 }
 
 

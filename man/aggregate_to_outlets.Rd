@@ -11,6 +11,7 @@ aggregate_to_outlets(
   divide = NULL,
   crs = 5070,
   pois = NULL,
+  outlets = NULL,
   outfile = NULL
 )
 }
@@ -26,11 +27,13 @@ defaults used by \code{read_hydrofabric()}.}
 \item{divide}{Optional layer name for divides in \code{gpkg}. If \code{NULL}, defaults
 used by \code{read_hydrofabric()}.}
 
-\item{crs}{Target integer EPSG code used when reading the hydrofabric.
-Default: \code{5070}.}
+\item{crs}{Target CRS used when reading the hydrofabric. Default: \code{5070}.}
 
 \item{pois}{An \code{sf} (or data frame) with a \code{flowpath_id} column indicating
 POI-associated flowpaths to anchor mainstem levelpaths.}
+
+\item{outlets}{Optional character/numeric vector of flowpath IDs to treat as
+outlets when \code{pois} is \code{NULL} or when additional outlets should be seeded.}
 
 \item{outfile}{Optional output path (reserved for future write support).}
 }
@@ -49,23 +52,4 @@ flowpaths by group to produce an outlet-scale network layer. This function
 identifies critical junctions along levelpaths carrying points-of-interest
 (POIs) and treats their immediate upstream siblings as additional outlets,
 ensuring tributary groups are preserved where POIs branch.
-}
-\section{Requirements}{
-
-The following package-internal helpers are expected to exist in your package:
-\code{read_hydrofabric()}, \code{prepare_network()}, \code{add_network_type()},
-\code{node_geometry()}, \code{union_polygons()}, and \code{union_linestrings()}.
-}
-
-\examples{
-\dontrun{
-res <- aggregate_to_outlets(
-  gpkg = "hydrofabric.gpkg",
-  flowpath = "flowpaths",
-  divide = "divides",
-  pois = my_pois_sf
-)
-plot(res$divides["flowpath_id"])
-}
-
 }

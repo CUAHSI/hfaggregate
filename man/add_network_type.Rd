@@ -4,12 +4,10 @@
 \alias{add_network_type}
 \title{Annotate Flowpaths and Divides with Type Info}
 \usage{
-add_network_type(network_list, verbose = TRUE)
+add_network_type(network_list)
 }
 \arguments{
 \item{network_list}{List of \code{flowpaths} and \code{divides} (sf objects).}
-
-\item{verbose}{Logical. Emit progress messages if TRUE.}
 }
 \value{
 Updated \code{network_list} with type info columns.

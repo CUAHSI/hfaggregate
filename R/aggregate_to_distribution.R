@@ -128,7 +128,7 @@ aggregate_to_distribution <- function(gpkg = NULL,
                                    flowpaths = flowpath,
                                    crs = crs) |>
     prepare_network() |>
-    add_network_type(verbose = FALSE)
+    add_network_type()
   
   if (!"member_comid" %in% names(network_list$flowpaths)) {
     network_list$flowpaths$member_comid <- network_list$flowpaths$flowpath_id
@@ -339,7 +339,7 @@ aggregate_along_mainstems <- function(network_list,
     select(set, flowpath_id, flowpath_toid, levelpathid, hydroseq, member_comid, poi_id, n)
   
   aggregated <- aggregate_sets(network_list, index_table)
-  aggregated <- add_network_type(aggregated, verbose = verbose)
+  aggregated <- add_network_type(aggregated)
   
   aggregated$lookup <- index_table |>
     group_by(set) |>
@@ -622,7 +622,7 @@ collapse_headwaters <- function(network_list,
     mapping_table <- build_headwater_collapse(network_list, min_area_sqkm, min_length_km)
   }
   
-  network_list <- add_network_type(network_list, verbose)
+  network_list <- add_network_type(network_list)
   
   cli::cli_alert_success(glue("Collapsed {start - nrow(network_list$flowpaths)} features."))
   
@@ -736,7 +736,7 @@ collapse_headwaters <- function(network_list,
     mapping_table <- build_headwater_collapse(network_list, min_area_sqkm, min_length_km)
   }
   
-  network_list <- add_network_type(network_list, verbose)
+  network_list <- add_network_type(network_list)
   
   cli::cli_alert_success(glue("Collapsed {start - nrow(network_list$flowpaths)} features."))
   

@@ -199,7 +199,7 @@ aggregate_to_outlets = function(gpkg = NULL,
   
   network_list <- read_hydrofabric(gpkg = gpkg, divides = divide,  flowpaths = flowpath, crs = crs) |>
     prepare_network() |>
-    add_network_type(verbose = FALSE)
+    add_network_type()
   
   if (!is.null(pois)) {
     names(pois) <- tolower(names(pois))
